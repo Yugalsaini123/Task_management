@@ -1,17 +1,46 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Task Management App</title>
-    <meta name="description" content="A task management application built with React">
+    <meta name="description" content="A task management application">
     <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
-    <script src="https://cdn.jsdelivr.net/npm/analytics-library@1.0.0/dist/analytics.js"></script>
 </head>
 <body>
-    <div id="root"></div>
+    <div id="root">
+        <h1>Task List</h1>
+        <div id="signup-section">
+            <form id="signup-form">
+                <input type="text" id="signup-username" placeholder="Username">
+                <input type="password" id="signup-password" placeholder="Password">
+                <button type="button" onclick="signup()">Signup</button>
+            </form>
+            <p id="signup-error" class="error-msg"></p>
+            <p id="signup-success" class="success-msg"></p>
+        </div>
+
+        <div id="login-section">
+            <form id="login-form">
+                <input type="text" id="login-username" placeholder="Username">
+                <input type="password" id="login-password" placeholder="Password">
+                <button type="button" onclick="login()">Login</button>
+            </form>
+            <p id="login-error" class="error-msg"></p>
+            <p id="login-success" class="success-msg"></p>
+        </div>
+
+        <div id="task-section" style="display: none;">
+            <button onclick="logout()">Logout</button>
+            <p id="logout-error" class="error-msg"></p>
+            <p id="logout-success" class="success-msg"></p>
+            <ul id="task-list" class="task-list"></ul>
+            <input type="text" id="task-name" placeholder="Enter task name">
+            <button onclick="addTask()">Add Task</button>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.13.0/Sortable.min.js"></script>
     <script src="index.js"></script>
-    <script src="app.js"></script>
 </body>
 </html>
