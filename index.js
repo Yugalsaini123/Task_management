@@ -1,182 +1,233 @@
-//import React from 'react';
-//import ReactDOM from 'react-dom';
-//import { BrowserRouter, Route, Switch } from 'react-router-dom';
-//import axios from 'axios';
-//
-//function App() {
-//    return (
-//        <BrowserRouter>
-//            <Switch>
-//                <Route path="/" exact component={TaskList} />
-//                <Route path="/add" component={TaskForm} />
-//                <Route path="/edit/:id" component={TaskForm} />
-//            </Switch>
-//        </BrowserRouter>
-//    );
-//}
-//
-//function TaskList() {
-//    const [tasks, setTasks] = React.useState([]);
-//
-//    React.useEffect(() => {
-//        axios.get('/api/tasks')
-//          .then(response => {
-//                setTasks(response.data);
-//            })
-//          .catch(error => {
-//                console.error(error);
-//            });
-//    }, []);
-//
-//    const handleAddTask = () => {
-//        // Redirect to the add task form
-//        window.location.href = '/add';
-//    };
-//
-//    const handleDeleteTask = (id) => {
-//        axios.delete(`/api/tasks/${id}`)
-//          .then(response => {
-//                console.log(response.data);
-//            })
-//          .catch(error => {
-//                console.error(error);
-//            });
-//    };
-//
-//    return (
-//        <div>
-//            <h1>Task List</h1>
-//            <ul className="task-list">
-//                {tasks.map(task => (
-//                    <li key={task.id}>
-//                        {task.name}
-//                        <button onClick={() => handleDeleteTask(task.id)}>Delete</button>
-//                    </li>
-//                ))}
-//            </ul>
-//            <button onClick={handleAddTask}>Add Task</button>
-//        </div>
-//    );
-//}
-//
-//function TaskForm() {
-//    const [task, setTask] = React.useState({ name: '' });
-//    const [errors, setErrors] = React.useState({});
-//
-//    const handleSubmit = (event) => {
-//        event.preventDefault();
-//        axios.post('/api/tasks', task)
-//          .then(response => {
-//                console.log(response.data);
-//                setTask({ name: '' });
-//            })
-//          .catch(error => {
-//                setErrors(error.response.data);
-//            });
-//    };
-//
-//    return (
-//        <div>
-//            <h1>{task.id? 'Edit Task' : 'Add Task'}</h1>
-//            <form onSubmit={handleSubmit}>
-//                <input type="text" value={task.name} onChange={(event) => setTask({ name: event.target.value })} />
-//                {errors.name && <div style={{ color: 'red' }}>{errors.name}</div>}
-//                <button type="submit">Save</button>
-//            </form>
-//        </div>
-//    );
-//}
-//
-//ReactDOM.render(<App />, document.getElementById('root'));
-
-
-
-
-
 // index.js
-import React, { useState, useEffect } from 'react';
-import ReactDOM from 'react-dom';
-import { BrowserRouter, Route, Switch } from 'react-router-dom';
-import axios from 'axios';
+document.addEventListener('DOMContentLoaded', () => {
+    getUser();
+    getTasks();
 
-function TaskList() {
-    const [tasks, setTasks] = useState([]);
+    // Initialize Sortable.js
+    const taskList = document.getElementById('task-list');
+    new Sortable(taskList, {
+        animation: 150, // Animation speed
+        onUpdate: (evt) => {
+            // Get the updated order of tasks
+            const tasks = Array.from(taskList.children).map(li => li.textContent.trim());
 
-    useEffect(() => {
-        axios.get('/api/tasks')
-            .then(response => {
-                setTasks(response.data);
-            })
-            .catch(error => {
-                console.error(error);
-            });
-    }, []);
+            // Send an AJAX request to update the order of tasks in the backend
+            updateTasksOrder(tasks);
+        }
+    });
+});
 
-    const handleDeleteTask = (id) => {
-        axios.delete(`/api/tasks/${id}`)
-            .then(response => {
-                console.log(response.data);
-                setTasks(tasks.filter(task => task.id !== id));
-            })
-            .catch(error => {
-                console.error(error);
-            });
-    };
+function updateTasksOrder(tasks) {
+    // Extracting task IDs from the task list items
+    const taskIds = tasks.map(task => task.id);
 
-    return (
-        <div>
-            <h1>Task List</h1>
-            <ul className="task-list">
-                {tasks.map(task => (
-                    <li key={task.id}>
-                        {task.name}
-                        <button onClick={() => handleDeleteTask(task.id)}>Delete</button>
-                    </li>
-                ))}
-            </ul>
-            <button onClick={() => window.location.href = '/add'}>Add Task</button>
-        </div>
-    );
+    fetch('/api/tasks/reorder', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ taskIds }), // Sending task IDs instead of task names
+        credentials: 'include'
+    })
+    .then(response => {
+        if (response.ok) {
+            console.log('Tasks order updated successfully');
+        } else {
+            throw new Error('Failed to update tasks order');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating tasks order:', error);
+    });
 }
 
-function TaskForm() {
-    const [task, setTask] = useState({ name: '' });
-    const [errors, setErrors] = useState({});
+  
 
-    const handleSubmit = (event) => {
-        event.preventDefault();
-        axios.post('/api/tasks', task)
-            .then(response => {
-                console.log(response.data);
-                window.location.href = '/';
-            })
-            .catch(error => {
-                setErrors(error.response.data);
-            });
-    };
 
-    return (
-        <div>
-            <h1>{task.id ? 'Edit Task' : 'Add Task'}</h1>
-            <form onSubmit={handleSubmit}>
-                <input type="text" value={task.name} onChange={(event) => setTask({ name: event.target.value })} />
-                {errors.name && <div style={{ color: 'red' }}>{errors.name}</div>}
-                <button type="submit">Save</button>
-            </form>
-        </div>
-    );
+function getUser() {
+  fetch('/api/user', {
+      method: 'GET',
+      credentials: 'include'
+  })
+  .then(response => {
+      if (response.ok) {
+          return response.json();
+      } else if (response.status === 401) {
+          document.getElementById('login-section').style.display = 'block';
+          document.getElementById('task-section').style.display = 'none';
+          throw new Error('User is not authenticated');
+      } else {
+          throw new Error('Failed to fetch user data');
+      }
+  })
+  .then(user => {
+      if (user.username) {
+          document.getElementById('login-section').style.display = 'none';
+          document.getElementById('task-section').style.display = 'block';
+      } else {
+          document.getElementById('login-section').style.display = 'block';
+          document.getElementById('task-section').style.display = 'none';
+      }
+  })
+  .catch(error => {
+      console.error('Error fetching user:', error);
+      // Display error message or handle it accordingly
+  });
 }
 
-function App() {
-    return (
-        <BrowserRouter>
-            <Switch>
-                <Route path="/" exact component={TaskList} />
-                <Route path="/add" component={TaskForm} />
-                {/* other routes */}
-            </Switch>
-        </BrowserRouter>
-    );
+function getTasks() {
+  fetch('/api/tasks', {
+      method: 'GET',
+      credentials: 'include'
+  })
+  .then(response => {
+      if (response.ok) {
+          return response.json();
+      } else {
+          throw new Error('Error fetching tasks');
+      }
+  })
+  .then(tasks => {
+      // Sort tasks based on timestamp in descending order
+      tasks.sort((a, b) => b.timestamp - a.timestamp);
+      const taskList = document.getElementById('task-list');
+      taskList.innerHTML = '';
+      tasks.forEach(task => {
+          const li = document.createElement('li');
+          li.textContent = task.name;
+          const deleteButton = document.createElement('button');
+          deleteButton.textContent = 'Delete';
+          deleteButton.addEventListener('click', () => deleteTask(task.id));
+          li.appendChild(deleteButton);
+          taskList.appendChild(li);
+      });
+  })
+  .catch(error => {
+      console.error('Error fetching tasks:', error);
+      // Display error message or handle it accordingly
+  });
 }
 
-ReactDOM.render(<App />, document.getElementById('root'));
+function deleteTask(taskId) {
+  fetch(`/api/tasks/${taskId}`, {
+      method: 'DELETE',
+      credentials: 'include'
+  })
+  .then(response => {
+      if (response.ok) {
+          getTasks(); // Refresh task list after deletion
+      } else {
+          throw new Error('Error deleting task');
+      }
+  })
+  .catch(error => console.error('Error deleting task:', error));
+}
+
+function addTask() {
+  const taskName = document.getElementById('task-name').value;
+  if (taskName.trim() !== '') {
+      fetch('/api/tasks', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ name: taskName }),
+          credentials: 'include'
+      })
+      .then(response => response.json())
+      .then(() => {
+          getTasks();
+          document.getElementById('task-name').value = '';
+      })
+      .catch(error => console.error('Error adding task:', error));
+  }
+}
+
+function signup() {
+  const username = document.getElementById('signup-username').value;
+  const password = document.getElementById('signup-password').value;
+  fetch('/signup', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username, password }),
+      credentials: 'include'
+  })
+  .then(response => {
+      if (response.ok) {
+          document.getElementById('signup-error').textContent = ''; // Clear any previous error messages
+          document.getElementById('signup-success').textContent = 'Successfully signed up'; // Show success message
+          getUser();
+      } else {
+          throw new Error('Signup failed');
+      }
+  })
+  .catch(error => {
+      document.getElementById('signup-error').textContent = error.message;
+  });
+}
+
+function login() {
+  const username = document.getElementById('login-username').value;
+  const password = document.getElementById('login-password').value;
+  fetch('/login', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username, password }),
+      credentials: 'include'
+  })
+  .then(response => {
+      if (response.ok) {
+          return response.json();
+      } else {
+          throw new Error('Login failed');
+      }
+  })
+  .then(data => {
+      document.getElementById('login-error').textContent = ''; // Clear any previous error messages
+      document.getElementById('login-success').textContent = 'Successfully logIn'; // Show success message
+      getUser();
+      displayTasks(data.tasks); // Display tasks
+  })
+  .catch(error => {
+      document.getElementById('login-error').textContent = error.message;
+  });
+}
+
+function displayTasks(tasks) {
+  // Sort tasks based on timestamp in descending order
+  tasks.sort((a, b) => b.timestamp - a.timestamp);
+  const taskList = document.getElementById('task-list');
+  taskList.innerHTML = '';
+  tasks.forEach(task => {
+      const li = document.createElement('li');
+      li.textContent = task.name;
+      const deleteButton = document.createElement('button');
+      deleteButton.textContent = 'Delete';
+      deleteButton.addEventListener('click', () => deleteTask(task.id));
+      li.appendChild(deleteButton);
+      taskList.appendChild(li);
+  });
+}
+
+function logout() {
+  fetch('/logout', {
+      method: 'GET',
+      credentials: 'include'
+  })
+  .then(response => {
+      if (response.ok) {
+          document.getElementById('logout-error').textContent = ''; 
+          document.getElementById('logout-success').textContent = 'Successfully logout'; 
+          getUser();
+      } else {
+          console.error('Logout failed');
+      }
+  })
+  .catch(error => console.error('Error during logout:', error));
+}
+
+
